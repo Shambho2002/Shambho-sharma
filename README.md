@@ -1,2 +1,4 @@
 # Shambho-sharma
-These are my some spring boot project's
+These are some my spring boot project's
+
+Author-Shambhu Sharma
