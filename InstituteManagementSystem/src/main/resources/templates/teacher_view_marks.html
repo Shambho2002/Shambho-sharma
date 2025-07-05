@@ -1,0 +1,440 @@
+<!--<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>View Attendance</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        .calendar-day {
+            width: 30px;
+            height: 30px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin: 2px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .present { background-color: #d4edda; color: #155724; }
+        .absent { background-color: #f8d7da; color: #721c24; }
+        .no-data { background-color: #f8f9fa; color: #6c757d; }
+        .today { border: 2px solid #007bff; }
+        .student-card { margin-bottom: 15px; }
+        .month-nav { display: flex; align-items: center; justify-content: center; gap: 15px; }
+    </style>
+</head>
+<body>
+<div class="container mt-5">
+    <h2 class="mb-4">View Attendance</h2>
+
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-primary text-white">
+            Filter Attendance
+        </div>
+        <div class="card-body">
+            <form id="attendanceFilterForm">
+                <input type="hidden" name="teacherId" th:value="${teacherId}" />
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="classSelect" class="form-label">Select Classroom:</label>
+                        <select id="classSelect" name="classId" class="form-select" required onchange="loadSubjects()">
+                            <option value="">-- Select Class --</option>
+                            <option th:each="c : ${classes}" th:value="${c.id}" th:text="${c.name}"></option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="subjectSelect" class="form-label">Select Subject:</label>
+                        <select id="subjectSelect" name="subjectId" class="form-select" required onchange="loadAttendance()">
+                            <option value="">-- Select Subject --</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Month Navigation:</label>
+                        <div class="month-nav">
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="previousMonth()" id="prevBtn">← Prev</button>
+                            <span id="currentMonthYear" class="fw-bold"></span>
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="nextMonth()" id="nextBtn">Next →</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm" id="attendanceSection" style="display: none;">
+        <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Attendance Records</h5>
+            <div id="monthSummary" class="small"></div>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <h6>Students</h6>
+                    <div i
+					
+					-->
+					
+					
+					
+					
+					
+					
+					<!DOCTYPE html>
+					<html xmlns:th="http://www.thymeleaf.org">
+					<head>
+					    <meta charset="UTF-8">
+					    <title>View Attendance</title>
+					    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+					    <style>
+					        .calendar-day {
+					            width: 30px;
+					            height: 30px;
+					            display: inline-flex;
+					            align-items: center;
+					            justify-content: center;
+					            margin: 2px;
+					            border-radius: 4px;
+					            font-size: 12px;
+					            cursor: pointer;
+					        }
+					        .present { background-color: #d4edda; color: #155724; }
+					        .absent { background-color: #f8d7da; color: #721c24; }
+					        .no-data { background-color: #f8f9fa; color: #6c757d; }
+					        .today { border: 2px solid #007bff; }
+					        .student-card { margin-bottom: 15px; }
+					        .month-nav { display: flex; align-items: center; justify-content: center; gap: 15px; }
+					        .attendance-calendar-grid {
+					            display: grid;
+					            grid-template-columns: repeat(auto-fill, minmax(35px, 1fr));
+					            gap: 2px;
+					            padding: 5px;
+					            border: 1px solid #eee;
+					            border-radius: 5px;
+					            background-color: #fcfcfc;
+					        }
+					        .student-list-container {
+					            max-height: 500px; /* Adjust as needed */
+					            overflow-y: auto;
+					        }
+					    </style>
+					</head>
+					<body>
+					<div class="container mt-5">
+					    <h2 class="mb-4">View Attendance</h2>
+
+					    <div class="card mb-4 shadow-sm">
+					        <div class="card-header bg-primary text-white">
+					            Filter Attendance
+					        </div>
+					        <div class="card-body">
+					            <form id="attendanceFilterForm">
+					                <input type="hidden" name="teacherId" th:value="${teacherId}" />
+					                <div class="row g-3">
+					                    <div class="col-md-4">
+					                        <label for="classSelect" class="form-label">Select Classroom:</label>
+					                        <select id="classSelect" name="classId" class="form-select" required onchange="loadSubjects()">
+					                            <option value="">-- Select Class --</option>
+					                            <option th:each="c : ${classes}" th:value="${c.id}" th:text="${c.name}"></option>
+					                        </select>
+					                    </div>
+					                    <div class="col-md-4">
+					                        <label for="subjectSelect" class="form-label">Select Subject:</label>
+					                        <select id="subjectSelect" name="subjectId" class="form-select" required onchange="loadAttendance()" disabled>
+					                            <option value="">-- Select Subject --</option>
+					                        </select>
+					                    </div>
+					                    <div class="col-md-4">
+					                        <label class="form-label">Month Navigation:</label>
+					                        <div class="month-nav">
+					                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="previousMonth()" id="prevBtn">← Prev</button>
+					                            <span id="currentMonthYear" class="fw-bold"></span>
+					                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="nextMonth()" id="nextBtn">Next →</button>
+					                        </div>
+					                    </div>
+					                </div>
+					            </form>
+					        </div>
+					    </div>
+
+					    <div class="card shadow-sm" id="attendanceSection" style="display: none;">
+					        <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+					            <h5 class="mb-0">Attendance Records</h5>
+					            <div id="monthSummary" class="small"></div>
+					        </div>
+					        <div class="card-body">
+					            <div class="row">
+					                <div class="col-md-4">
+					                    <h6>Students</h6>
+					                    <div id="studentListContainer" class="list-group student-list-container">
+					                        </div>
+					                </div>
+					                <div class="col-md-8">
+					                    <h6>Daily Attendance Calendar</h6>
+					                    <div id="attendanceCalendar" class="attendance-calendar-grid">
+					                        </div>
+					                </div>
+					            </div>
+					        </div>
+					    </div>
+					</div>
+
+					<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+					<script>
+					    let currentYear;
+					    let currentMonth; // 0-indexed for JavaScript Date object
+					    let selectedStudentId = null;
+					    let studentData = []; // To store all student attendance data
+
+					    document.addEventListener("DOMContentLoaded", function() {
+					        const today = new Date();
+					        currentYear = today.getFullYear();
+					        currentMonth = today.getMonth(); // 0 for January, 11 for December
+					        updateMonthYearDisplay();
+					    });
+
+					    function updateMonthYearDisplay() {
+					        const date = new Date(currentYear, currentMonth, 1);
+					        document.getElementById('currentMonthYear').textContent = date.toLocaleString('default', { month: 'long', year: 'numeric' });
+					        loadAttendance(); // Reload attendance when month changes
+					    }
+
+					    function previousMonth() {
+					        currentMonth--;
+					        if (currentMonth < 0) {
+					            currentMonth = 11;
+					            currentYear--;
+					        }
+					        updateMonthYearDisplay();
+					    }
+
+					    function nextMonth() {
+					        currentMonth++;
+					        if (currentMonth > 11) {
+					            currentMonth = 0;
+					            currentYear++;
+					        }
+					        updateMonthYearDisplay();
+					    }
+
+					    function loadSubjects() {
+					        const classId = document.getElementById('classSelect').value;
+					        const teacherId = document.querySelector('input[name="teacherId"]').value;
+					        const subjectSelect = document.getElementById('subjectSelect');
+
+					        subjectSelect.innerHTML = '<option value="">Loading subjects...</option>';
+					        subjectSelect.disabled = true;
+					        document.getElementById('attendanceSection').style.display = 'none';
+
+					        if (!classId) {
+					            subjectSelect.innerHTML = '<option value="">-- Select Subject --</option>';
+					            return;
+					        }
+
+					        fetch(`/teacher/get-subjects?classId=${classId}&teacherId=${teacherId}`)
+					            .then(response => response.json())
+					            .then(data => {
+					                subjectSelect.innerHTML = '<option value="">-- Select Subject --</option>';
+					                if (data && data.length > 0) {
+					                    data.forEach(subject => {
+					                        const option = document.createElement('option');
+					                        option.value = subject.id;
+					                        option.textContent = subject.name;
+					                        subjectSelect.appendChild(option);
+					                    });
+					                    subjectSelect.disabled = false;
+					                } else {
+					                    subjectSelect.innerHTML = '<option value="">No subjects found</option>';
+					                }
+					            })
+					            .catch(err => {
+					                console.error("Error loading subjects:", err);
+					                subjectSelect.innerHTML = '<option value="">Error loading</option>';
+					            });
+					    }
+
+					    function loadAttendance() {
+					        const classId = document.getElementById('classSelect').value;
+					        const subjectId = document.getElementById('subjectSelect').value;
+
+					        if (!classId || !subjectId) {
+					            document.getElementById('attendanceSection').style.display = 'none';
+					            return;
+					        }
+
+					        document.getElementById('attendanceSection').style.display = 'block';
+					        document.getElementById('studentListContainer').innerHTML = '<div class="text-center p-3">Loading students...</div>';
+					        document.getElementById('attendanceCalendar').innerHTML = '';
+					        document.getElementById('monthSummary').textContent = '';
+					        selectedStudentId = null; // Reset selected student
+
+					        fetch(`/teacher/attendance/monthly?classId=${classId}&subjectId=${subjectId}&year=${currentYear}&month=${currentMonth + 1}`) // month + 1 because Java month is 1-indexed
+					            .then(response => response.json())
+					            .then(data => {
+					                if (data.success) {
+					                    studentData = data.studentData; // Store the fetched data
+					                    displayStudentList(studentData);
+
+					                    // If there's only one student, automatically select them
+					                    if (studentData.length === 1) {
+					                        selectStudent(studentData[0].studentId);
+					                    } else if (studentData.length > 0) {
+					                        // Otherwise, if a student was previously selected and still exists, select them
+					                        const foundStudent = studentData.find(s => s.studentId === selectedStudentId);
+					                        if (foundStudent) {
+					                            selectStudent(selectedStudentId);
+					                        } else {
+					                            // Clear calendar if previous selected student is gone
+					                            document.getElementById('attendanceCalendar').innerHTML = '';
+					                        }
+					                    } else {
+					                        // No students found
+					                        document.getElementById('studentListContainer').innerHTML = '<div class="alert alert-info">No students found for this class and subject.</div>';
+					                        document.getElementById('attendanceCalendar').innerHTML = '';
+					                    }
+
+					                    updateMonthSummary();
+
+					                } else {
+					                    document.getElementById('studentListContainer').innerHTML = `<div class="alert alert-danger">${data.message}</div>`;
+					                    document.getElementById('attendanceCalendar').innerHTML = '';
+					                }
+					            })
+					            .catch(err => {
+					                console.error("Error loading attendance:", err);
+					                document.getElementById('studentListContainer').innerHTML = `<div class="alert alert-danger">Failed to load attendance data.</div>`;
+					                document.getElementById('attendanceCalendar').innerHTML = '';
+					            });
+					    }
+
+					    function displayStudentList(students) {
+					        const studentListContainer = document.getElementById('studentListContainer');
+					        studentListContainer.innerHTML = ''; // Clear previous list
+
+					        if (students.length === 0) {
+					            studentListContainer.innerHTML = '<div class="alert alert-info">No students found for this subject and class.</div>';
+					            return;
+					        }
+
+					        students.forEach(student => {
+					            const studentItem = document.createElement('a');
+					            studentItem.href = "#";
+					            studentItem.classList.add('list-group-item', 'list-group-item-action', 'd-flex', 'justify-content-between', 'align-items-center');
+					            studentItem.setAttribute('data-student-id', student.studentId);
+					            studentItem.innerHTML = `
+					                ${student.studentName}
+					                <span class="badge bg-primary rounded-pill">${student.totalPresent}P / ${student.totalAbsent}A</span>
+					            `;
+					            studentItem.onclick = (e) => {
+					                e.preventDefault();
+					                selectStudent(student.studentId);
+					            };
+					            studentListContainer.appendChild(studentItem);
+					        });
+
+					        // Highlight the currently selected student
+					        if (selectedStudentId) {
+					            const activeItem = studentListContainer.querySelector(`[data-student-id="${selectedStudentId}"]`);
+					            if (activeItem) {
+					                activeItem.classList.add('active');
+					            }
+					        }
+					    }
+
+					    function selectStudent(studentId) {
+					        selectedStudentId = studentId;
+
+					        // Update active class in student list
+					        const studentItems = document.querySelectorAll('#studentListContainer .list-group-item');
+					        studentItems.forEach(item => item.classList.remove('active'));
+					        const activeItem = document.querySelector(`#studentListContainer [data-student-id="${studentId}"]`);
+					        if (activeItem) {
+					            activeItem.classList.add('active');
+					        }
+
+					        // Display calendar for the selected student
+					        displayAttendanceCalendar(studentId);
+					    }
+
+					    function displayAttendanceCalendar(studentId) {
+					        const attendanceCalendar = document.getElementById('attendanceCalendar');
+					        attendanceCalendar.innerHTML = ''; // Clear previous calendar
+
+					        const selectedStudent = studentData.find(s => s.studentId === studentId);
+					        if (!selectedStudent) {
+					            attendanceCalendar.innerHTML = '<div class="alert alert-warning">Please select a student.</div>';
+					            return;
+					        }
+
+					        const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate(); // Get number of days in current month
+
+					        // Get attendance records for the selected student
+					        const records = selectedStudent.attendanceRecords || [];
+					        const attendanceMap = new Map(); // Map date (YYYY-MM-DD) to attendance status
+					        records.forEach(record => {
+					            const date = new Date(record.attendanceDate); // Assuming attendanceDate is a valid date string/timestamp
+					            if (date.getFullYear() === currentYear && date.getMonth() === currentMonth) {
+					                const dayKey = date.getDate(); // Just the day of the month
+					                attendanceMap.set(dayKey, record.present);
+					            }
+					        });
+
+					        const todayDate = new Date();
+					        for (let day = 1; day <= daysInMonth; day++) {
+					            const dayElement = document.createElement('div');
+					            dayElement.classList.add('calendar-day');
+					            dayElement.textContent = day;
+
+					            const dateToCheck = new Date(currentYear, currentMonth, day);
+					            if (attendanceMap.has(day)) {
+					                if (attendanceMap.get(day)) {
+					                    dayElement.classList.add('present');
+					                    dayElement.title = `Day ${day}: Present`;
+					                } else {
+					                    dayElement.classList.add('absent');
+					                    dayElement.title = `Day ${day}: Absent`;
+					                }
+					            } else {
+					                dayElement.classList.add('no-data');
+					                dayElement.title = `Day ${day}: No data`;
+					            }
+
+					            // Highlight today's date
+					            if (dateToCheck.getDate() === todayDate.getDate() &&
+					                dateToCheck.getMonth() === todayDate.getMonth() &&
+					                dateToCheck.getFullYear() === todayDate.getFullYear()) {
+					                dayElement.classList.add('today');
+					            }
+
+					            attendanceCalendar.appendChild(dayElement);
+					        }
+					    }
+
+					    function updateMonthSummary() {
+					        const monthSummaryDiv = document.getElementById('monthSummary');
+					        let totalPresentAll = 0;
+					        let totalAbsentAll = 0;
+
+					        studentData.forEach(student => {
+					            totalPresentAll += student.totalPresent;
+					            totalAbsentAll += student.totalAbsent;
+					        });
+
+					        const totalDaysMarked = totalPresentAll + totalAbsentAll;
+
+					        if (totalDaysMarked > 0) {
+					            const overallPercentage = ((totalPresentAll / totalDaysMarked) * 100).toFixed(1);
+					            monthSummaryDiv.innerHTML = `Overall: ${totalPresentAll} Present / ${totalAbsentAll} Absent (${overallPercentage}%)`;
+					        } else {
+					            monthSummaryDiv.textContent = 'No attendance marked this month.';
+					        }
+					    }
+
+					    // Initial load when page loads if class/subject are pre-selected (unlikely in this setup, but good practice)
+					    const initialClassId = document.getElementById('classSelect').value;
+					    if (initialClassId) {
+					        loadSubjects();
+					    }
+					</script>
+					</body>
+					</html>

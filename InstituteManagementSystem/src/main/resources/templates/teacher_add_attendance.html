@@ -1,0 +1,474 @@
+
+
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Add Attendance</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .student-card {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            position: relative;
+            padding: 15px;
+            margin: 10px;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+            /* Added shadow for better visual separation when not hovered */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .student-card:hover {
+            border-color: #007bff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .attendance-status {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+        .present-indicator { background-color: #28a745; } /* Green */
+        .absent-indicator { background-color: #dc3545; } /* Red */
+        .not-marked { background-color: #6c757d; } /* Gray */
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .date-info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #007bff;
+        }
+        .filter-section {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-bottom: 1px solid #dee2e6; /* Add a subtle border */
+        }
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        .student-grid {
+            max-height: 600px; /* Limits height, adds scroll if content exceeds */
+            overflow-y: auto;
+            padding-top: 10px; /* Some padding at the top */
+        }
+        /* attendance-summary style was in the design but not used in the body, kept it for completeness */
+        .attendance-summary {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">
+                <i class="fas fa-clipboard-check text-primary"></i> Mark Daily Attendance
+                <small class="text-muted">- <span id="currentDate"></span></small>
+            </h2>
+        </div>
+    </div>
+
+    <div id="messageContainer">
+        <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle"></i> <span th:text="${success}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle"></i> <span th:text="${error}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    </div>
+
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header filter-section">
+            <h5 class="mb-0"><i class="fas fa-filter"></i> Select Class and Subject</h5>
+        </div>
+        <div class="card-body">
+            <input type="hidden" id="teacherId" th:value="${teacherId}" />
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="classSelect" class="form-label fw-bold">Select Classroom:</label>
+                    <select id="classSelect" class="form-select" onchange="loadSubjects()" required>
+                        <option value="">-- Select Class --</option>
+                        <option th:each="c : ${classList}"
+                                th:value="${c.id}"
+                                th:text="${c.name}"
+                                th:selected="${c.id == classId}"></option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label for="subjectSelect" class="form-label fw-bold">Select Subject:</label>
+                    <select id="subjectSelect" class="form-select" onchange="loadStudents()" required disabled>
+                        <option value="">-- First Select Class --</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-12">
+                    <div class="date-info text-center">
+                        <h6 class="mb-1">
+                            <i class="fas fa-calendar-day"></i> Today's Date: <span id="todayDisplay"></span>
+                        </h6>
+                        <small class="text-muted">Attendance will automatically reset at midnight</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="loading-spinner" id="loadingSpinner">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2">Loading students...</p>
+    </div>
+
+    <div id="studentsSection" style="display: none;">
+        <div class="card shadow-sm">
+            <div class="card-header bg-info text-white">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h5 class="mb-0">
+                            <i class="fas fa-users"></i> Students List
+                        </h5>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <button class="btn btn-success me-2" onclick="markAllPresent()">Mark All Present</button>
+                        <button class="btn btn-danger" onclick="markAllAbsent()">Mark All Absent</button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body student-grid" id="studentList">
+                </div>
+        </div>
+    </div>
+
+</div>
+
+<div class="modal fade" id="attendanceModal" tabindex="-1" aria-labelledby="attendanceModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="attendanceModalLabel">Mark Attendance</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p id="studentModalName"></p>
+        <div class="d-flex justify-content-around mt-3">
+          <button class="btn btn-success" onclick="submitAttendance(true)">Present</button>
+          <button class="btn btn-danger" onclick="submitAttendance(false)">Absent</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    let attendanceModalInstance; // Declare a variable to hold the modal instance
+
+    document.addEventListener("DOMContentLoaded", function () {
+        // Display today's date
+        document.getElementById('currentDate').textContent = new Date().toLocaleDateString();
+        document.getElementById('todayDisplay').textContent = new Date().toLocaleDateString();
+
+        // Initialize the Bootstrap modal once
+        attendanceModalInstance = new bootstrap.Modal(document.getElementById('attendanceModal'));
+    });
+
+    function loadSubjects() {
+        const classId = document.getElementById('classSelect').value;
+        const teacherId = document.getElementById('teacherId').value;
+        const subjectSelect = document.getElementById('subjectSelect');
+        subjectSelect.innerHTML = '<option value="">Loading subjects...</option>';
+        subjectSelect.disabled = true;
+        document.getElementById('studentsSection').style.display = 'none'; // Hide students when class changes
+
+        if (!classId) {
+            subjectSelect.innerHTML = '<option value="">-- First Select Class --</option>';
+            return;
+        }
+
+        fetch(`/teacher/get-subjects?classId=${classId}&teacherId=${teacherId}`)
+            .then(response => response.json())
+            .then(data => {
+                subjectSelect.innerHTML = '<option value="">-- Select Subject --</option>';
+                if (data && data.length > 0) {
+                    data.forEach(subject => {
+                        const option = document.createElement('option');
+                        option.value = subject.id;
+                        option.textContent = subject.name;
+                        subjectSelect.appendChild(option);
+                    });
+                    subjectSelect.disabled = false;
+                } else {
+                    subjectSelect.innerHTML = '<option value="">No subjects found</option>';
+                }
+            })
+            .catch(err => {
+                console.error("Error loading subjects:", err);
+                subjectSelect.innerHTML = '<option value="">Error loading</option>';
+            });
+    }
+
+    function loadStudents() {
+        const classId = document.getElementById('classSelect').value;
+        const subjectId = document.getElementById('subjectSelect').value; // Ensure subject is selected too
+
+        if (!classId || !subjectId) {
+            document.getElementById('studentsSection').style.display = 'none';
+            return;
+        }
+
+        // Show loading spinner
+        document.getElementById('loadingSpinner').style.display = 'block';
+        document.getElementById('studentsSection').style.display = 'none';
+
+        fetch(`/teacher/get-students?classId=${classId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.text();
+            })
+            .then(html => {
+                // Replace content of studentsSection with the fragment
+                document.getElementById('studentList').innerHTML = html;
+                document.getElementById('studentsSection').style.display = 'block';
+                // After loading students, update their attendance status if already marked for today
+                updateStudentAttendanceStatus();
+            })
+            .catch(err => {
+                console.error("Error loading students:", err);
+                alert("Failed to load students: " + err.message);
+                document.getElementById('studentList').innerHTML = '<div class="alert alert-danger">Failed to load students. Please try again.</div>';
+            })
+            .finally(() => {
+                document.getElementById('loadingSpinner').style.display = 'none';
+            });
+    }
+
+    function updateStudentAttendanceStatus() {
+        const classId = document.getElementById('classSelect').value;
+        const subjectId = document.getElementById('subjectSelect').value;
+        const teacherId = document.getElementById('teacherId').value;
+
+        if (!classId || !subjectId || !teacherId) return;
+
+        // Fetch today's attendance for the selected class/subject
+        fetch(`/teacher/attendance/today?classId=${classId}&subjectId=${subjectId}&teacherId=${teacherId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.attendanceRecords) {
+                    data.attendanceRecords.forEach(record => {
+                        const cardStatusIndicator = document.querySelector(`.student-card[data-student-id="${record.studentId}"] .attendance-status`);
+                        if (cardStatusIndicator) {
+                            cardStatusIndicator.classList.remove('not-marked', 'present-indicator', 'absent-indicator');
+                            cardStatusIndicator.classList.add(record.present ? 'present-indicator' : 'absent-indicator');
+                            cardStatusIndicator.title = record.present ? 'Present' : 'Absent'; // Add tooltip
+                        }
+                    });
+                }
+            })
+            .catch(err => {
+                console.error("Error fetching today's attendance:", err);
+                // Optionally show a non-blocking error message
+            });
+    }
+
+
+    function markAllPresent() {
+        const classId = document.getElementById('classSelect').value;
+        const subjectId = document.getElementById('subjectSelect').value;
+        const teacherId = document.getElementById('teacherId').value;
+
+        if (!classId || !subjectId || !teacherId) {
+            alert("Please select a class and subject first.");
+            return;
+        }
+
+        if (!confirm("Are you sure you want to mark ALL students as PRESENT for this class and subject today?")) {
+            return;
+        }
+
+        const studentCards = document.querySelectorAll('.student-card');
+        if (studentCards.length === 0) {
+            alert("No students to mark.");
+            return;
+        }
+
+        const studentIds = Array.from(studentCards).map(card => card.getAttribute('data-student-id'));
+
+        fetch('/teacher/attendance/mark-batch', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                classId: classId,
+                subjectId: subjectId,
+                teacherId: teacherId,
+                studentIds: studentIds,
+                present: true
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                // Update UI for all students
+                studentCards.forEach(card => {
+                    const statusIndicator = card.querySelector('.attendance-status');
+                    statusIndicator.classList.remove('not-marked', 'absent-indicator');
+                    statusIndicator.classList.add('present-indicator');
+                    statusIndicator.title = 'Present';
+                });
+            } else {
+                alert("Failed to mark all present: " + data.message);
+            }
+        })
+        .catch(err => {
+            console.error("Error marking all present:", err);
+            alert("Error marking all present.");
+        });
+    }
+
+    function markAllAbsent() {
+        const classId = document.getElementById('classSelect').value;
+        const subjectId = document.getElementById('subjectSelect').value;
+        const teacherId = document.getElementById('teacherId').value;
+
+        if (!classId || !subjectId || !teacherId) {
+            alert("Please select a class and subject first.");
+            return;
+        }
+
+        if (!confirm("Are you sure you want to mark ALL students as ABSENT for this class and subject today?")) {
+            return;
+        }
+
+        const studentCards = document.querySelectorAll('.student-card');
+        if (studentCards.length === 0) {
+            alert("No students to mark.");
+            return;
+        }
+
+        const studentIds = Array.from(studentCards).map(card => card.getAttribute('data-student-id'));
+
+        fetch('/teacher/attendance/mark-batch', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                classId: classId,
+                subjectId: subjectId,
+                teacherId: teacherId,
+                studentIds: studentIds,
+                present: false
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                // Update UI for all students
+                studentCards.forEach(card => {
+                    const statusIndicator = card.querySelector('.attendance-status');
+                    statusIndicator.classList.remove('not-marked', 'present-indicator');
+                    statusIndicator.classList.add('absent-indicator');
+                    statusIndicator.title = 'Absent';
+                });
+            } else {
+                alert("Failed to mark all absent: " + data.message);
+            }
+        })
+        .catch(err => {
+            console.error("Error marking all absent:", err);
+            alert("Error marking all absent.");
+        });
+    }
+
+
+    let selectedStudentId = null;
+    let selectedSubjectId = null;
+    let selectedTeacherId = null;
+
+    function openAttendanceModal(elem) {
+        selectedStudentId = elem.getAttribute('data-student-id');
+        const studentName = elem.getAttribute('data-student-name');
+        selectedSubjectId = document.getElementById('subjectSelect').value;
+        selectedTeacherId = document.getElementById('teacherId').value;
+
+        if (!selectedSubjectId) {
+            alert("Please select a subject before marking attendance.");
+            return;
+        }
+
+        document.getElementById('studentModalName').textContent = "Student: " + studentName;
+        attendanceModalInstance.show(); // Use the pre-initialized modal instance
+    }
+
+    function submitAttendance(isPresent) {
+        if (!selectedStudentId || !selectedSubjectId || !selectedTeacherId) {
+            alert("Missing information for attendance. Please select a student, class, and subject.");
+            return;
+        }
+
+        fetch(`/teacher/attendance/mark?studentId=${selectedStudentId}&subjectId=${selectedSubjectId}&present=${isPresent}&teacherId=${selectedTeacherId}`, {
+            method: 'POST'
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                const cardStatusIndicator = document.querySelector(`.student-card[data-student-id="${selectedStudentId}"] .attendance-status`);
+                if (cardStatusIndicator) {
+                    cardStatusIndicator.classList.remove('not-marked', 'present-indicator', 'absent-indicator');
+                    cardStatusIndicator.classList.add(isPresent ? 'present-indicator' : 'absent-indicator');
+                    cardStatusIndicator.title = isPresent ? 'Present' : 'Absent'; // Add tooltip
+                }
+                attendanceModalInstance.hide(); // Hide the modal after submission
+            } else {
+                alert("Failed: " + data.message);
+            }
+        })
+        .catch(err => {
+            console.error("Attendance error:", err);
+            alert("Error marking attendance");
+        });
+    }
+</script>
+
+</body>
+</html>
+
+<div th:fragment="studentListFragment">
+    <div class="row">
+        <div th:each="student : ${studentList}" class="col-md-4">
+            <div class="student-card"
+                 th:attr="data-student-id=${student.id}, data-student-name=${student.name}"
+                 onclick="openAttendanceModal(this)">
+                <h5 th:text="${student.name}"></h5>
+                <div class="attendance-status not-marked"></div>
+            </div>
+        </div>
+    </div>
+</div>

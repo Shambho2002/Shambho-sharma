@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<title>Add Attendance</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+<style>
+.student-card {
+cursor: pointer;
+transition: all 0.3s ease;
+border: 2px solid transparent;
+}
+.student-card:hover {
+border-color: #007bff;
+transform: translateY(-2px);
+box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+.attendance-status {
+position: absolute;
+top: 10px;
+right: 10px;
+width: 20px;
+height: 20px;
+border-radius: 50%;
+}
+.present-indicator { background-color: #28a745; }
+.absent-indicator { background-color: #dc3545; }
+.not-marked { background-color: #6c757d; }
+.modal-header {
+background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+color: white;
+}
+.date-info {
+background-color: #f8f9fa;
+padding: 10px;
+border-radius: 5px;
+margin-bottom: 20px;
+}
+</style>
+</head>
+<body>
+<div class="container mt-5">
+<h2 class="mb-4">
+<i class="fas fa-clipboard-check"></i> Mark Attendance
+<small class="text-muted">- <span th:text="${todayDate}"></span></small>
+</h2>
+
+<!-- Success/Error Messages -->
+<div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+<i class="fas fa-check-circle"></i> <span th:text="${success}"></span>
+<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+
+<div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+<i class="fas fa-exclamation-circle"></i> <span th:text="${error}"></span>
+<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+
+<!-- Filter Section -->
+<div class="card mb-4 shadow-sm">
+<div class="card-header bg-primary text-white">
+<h5 class="mb-0"><i class="fas fa-filter"></i> Select Class and Subject</h5>
+</div>
+<div class="card-body">
+<form method="get" th:action="@{/teacher/attendance/add}">
+<input type="hidden" name="teacherId" th:value="${teacherId}" />
+<div class="row g-3">
+<div class="col-md-6">
+<label for="classSelect" class="form-label">Select Classroom:</label>
+<select id="classSelect" name="classId" class="form-select" required onchange="this.form.submit()">
+<option value="">-- Select Class --</option>
+<option th:each="c : ${classList}" 
+th:value="${c.id}" 
+th:text="${c.name}"
+th:selected="${c.id == classId}"></option>
+</select>
+</div>
+<div class="col-md-6" th:if="${classId != null}">
+<label for="subjectSelect" class="form-label">Select Subject:</label>
+<select id="subjectSelect" name="subjectId" class="form-select" required>
+<option value="">-- Select Subject --</option>
+<option th:each="s : ${subjectList}" th:value="${s.id}" th:text="${s.name}"></option>
+</select>
+</div>
+</div>
+</form>
+</div>
+</div>
+
+<!-- Students List -->
+<div th:if="${classId != null and !studentList.isEmpty()}" class="card shadow-sm">
+<div class="card-header bg-info text-white">
+<h5 class="mb-0">
+<i class="fas fa-users"></i> Students List 
+<span class="badge bg-light text-dark ms-2" th:text="${#lists.size(studentList)}"></span>
+</h5>
+</div>
+<div class="card-body">
+<div class="date-info text-center">
+<strong>Marking attendance for: <span th:text="${todayDate}"></span></strong>
+</div>
+
+<div class="row g-3" id="studentsList">
+<div class="col-md-4 col-sm-6" th:each="student : ${studentList}">
+<div class="card student-card h-100 position-relative" 
+th:onclick="'openAttendanceModal(' + ${student.id} + ', \'' + ${student.name} + '\')'">
+<div class="attendance-status not-marked" th:id="'status-' + ${student.id}"></div>
+<div class="card-body text-center">
+<i class="fas fa-user-circle fa-3x text-primary mb-2"></i>
+<h6 class="card-title" th:text="${student.name}">Student Name</h6>
+<small class="text-muted">Click to mark attendance</small>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<div th:if="${classId != null and studentList.isEmpty()}" class="alert alert-warning">
+<i class="fas fa-exclamation-triangle"></i> No students found in selected class.
+</div>
+
+<!-- Back Button -->
+<div class="mt-4 text-center">
+<a th:href="@{/teacher/features(teacherId=${teacherId})}" class="btn btn-secondary">
+<i class="fas fa-arrow-left"></i> Back to Dashboard
+</a>
+</div>
+
+</div>
+
+<!-- Attendance Modal -->
+<div class="modal fade" id="attendanceModal" tabindex="-1" aria-hidden="true">
+<div class="modal-dialog modal-dialog-centered">
+<div class="modal-content">
+<div class="modal-header">
+<h5 class="modal-title">
+<i class="fas fa-clipboard-check"></i> Mark Attendance
+</h5>
+<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+</div>
+<div class="modal-body">
+<div class="text-center mb-3">
+<i class="fas fa-user-circle fa-4x text-primary"></i>
+<h4 id="studentName" class="mt-2">Student Name</h4>
+<p class="text-muted">Date: <span th:text="${todayDate}"></span></p>
+</div>
+<div class="row justify-content-center">
+<div class="col-md-8">
+<div class="form-check form-check-inline text-center me-4">
+<input class="form-check-input" type="radio" name="attendance" id="present" value="true">
+<label class="form-check-label" for="present">
+<i class="fas fa-check-circle text-success fa-2x d-block"></i>
+<strong class="text-success">Present</strong>
+</label>
+</div>
+<div class="form-check form-check-inline text-center">
+<input class="form-check-input" type="radio" name="attendance" id="absent" value="false">
+<label class="form-check-label" for="absent">
+<i class="fas fa-times-circle text-danger fa-2x d-block"></i>
+<strong class="text-danger">Absent</strong>
+</label>
+</div>
+</div>
+</div>
+<div id="attendanceMessage" class="alert d-none mt-3"></div>
+</div>
+<div class="modal-footer">
+<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+<button type="button" class="btn btn-primary" onclick="saveAttendance()" id="saveBtn">
+<i class="fas fa-save"></i> Save Attendance
+</button>
+</div>
+</div>
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+<script>
+let currentStudentId = null;
+let currentSubjectId = null;
+let teacherId = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+teacherId = document.querySelector('input[name="teacherId"]').value;
+const subjectSelect = document.getElementById('subjectSelect');
+if (subjectSelect && subjectSelect.value) {
+currentSubjectId = subjectSelect.value;
+loadExistingAttendance();
+}
+});
+
+function openAttendanceModal(studentId, studentName) {
+if (!currentSubjectId) {
+alert('Please select a subject first!');
+return;
+}
+
+currentStudentId = studentId;
+document.getElementById('studentName').textContent = studentName;
+
+// Reset radio buttons
+document.getElementById('present').checked = false;
+document.getElementById('absent').checked = false;
+
+// Hide message
+const messageDiv = document.getElementById('attendanceMessage');
+messageDiv.classList.add('d-none');
+
+// Check existing attendance
+checkExistingAttendance(studentId);
+
+// Show modal
+const modal = new bootstrap.Modal(document.getElementById('attendanceModal'));
+modal.show();
+}
+
+function checkExistingAttendance(studentId) {
+if (!currentSubjectId) return;
+
+fetch(`/teacher/attendance/check?studentId=${studentId}&subjectId=${currentSubjectId}`)
+.then(response => response.json())
+.then(data => {
+if (data.exists) {
+// Set the radio button based on existing attendance
+if (data.present) {
+document.getElementById('present').checked = true;
+} else {
+document.getElementById('absent').checked = true;
+}
+// Show update message
+const messageDiv = document.getElementById('attendanceMessage');
+messageDiv.className = 'alert alert-info';
+messageDiv.innerHTML = '<i class="fas fa-info-circle"></i> Attendance already marked. You can update it.';
+messageDiv.classList.remove('d-none');
+}
+})
+.catch(error => {
+console.error('Error checking attendance:', error);
+});
+}
+
+function saveAttendance() {
+const presentRadio = document.getElementById('present');
+const absentRadio = document.getElementById('absent');
+
+if (!presentRadio.checked && !absentRadio.checked) {
+alert('Please select Present or Absent!');
+return;
+}
+
+if (!currentSubjectId) {
+alert('Please select a subject!');
+return;
+}
+
+const isPresent = presentRadio.checked;
+const saveBtn = document.getElementById('saveBtn');
+saveBtn.disabled = true;
+saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+// Save attendance
+fetch('/teacher/attendance/mark', {
+method: 'POST',
+headers: {
+'Content-Type': 'application/x-www-form-urlencoded',
+},
+body: new URLSearchParams({
+studentId: currentStudentId,
+subjectId: currentSubjectId,
+present: isPresent,
+teacherId: teacherId
+})
+})
+.then(response => response.json())
+.then(data => {
+if (data.success) {
+// Update UI
+updateStudentAttendanceStatus(currentStudentId, isPresent);
+
+// Show success message
+const messageDiv = document.getElementById('attendanceMessage');
+messageDiv.className = 'alert alert-success';
+messageDiv.innerHTML = `<i class="fas fa-check-circle"></i> ${data.message}`;
+messageDiv.classList.remove('d-none');
+
+// Close modal after delay
+setTimeout(() => {
+const modal = bootstrap.Modal.getInstance(document.getElementById('attendanceModal'));
+modal.hide();
+}, 1500);
+} else {
+const messageDiv = document.getElementById('attendanceMessage');
+messageDiv.className = 'alert alert-danger';
+messageDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${data.message}`;
+messageDiv.classList.remove('d-none');
+}
+})
+.catch(error => {
+console.error('Error saving attendance:', error);
+const messageDiv = document.getElementById('attendanceMessage');
+messageDiv.className = 'alert alert-danger';
+messageDiv.innerHTML = '<i class="fas fa-exclamation-circle"></i> Error saving attendance. Please try again.';
+messageDiv.classList.remove('d-none');
+})
+.finally(() => {
+saveBtn.disabled = false;
+saveBtn.innerHTML = '<i class="fas fa-save"></i> Save Attendance';
+});
+}
+
+function updateStudentAttendanceStatus(studentId, isPresent) {
+const statusElement = document.getElementById(`status-${studentId}`);
+if (statusElement) {
+statusElement.className = `attendance-status ${isPresent ? 'present-indicator' : 'absent-indicator'}`;
+}
+}
+
+function loadExistingAttendance() {
+const subjectSelect = document.getElementById('subjectSelect');
+if (subjectSelect) {
+currentSubjectId = subjectSelect.value;
+}
+}
+
+// Update subject selection
+document.getElementById('subjectSelect')?.addEventListener('change', function() {
+currentSubjectId = this.value;
+if (currentSubjectId) {
+loadExistingAttendance();
+}
+});
+</script>
+
+</body>
+</html>

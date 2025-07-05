@@ -1,0 +1,87 @@
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Add Subject</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        .classroom-box {
+            background-color: #d1ecf1;
+            border: 1px solid #0c5460;
+            border-radius: 10px;
+            padding: 10px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        .classroom-box.selected {
+            background-color: #0dcaf0;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-danger">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/admin">Admin Panel</a>
+    </div>
+</nav>
+
+<div class="container mt-5">
+    <h3 class="text-center">Add Subject</h3>
+    <input type="text" class="form-control mb-3" id="searchBar" placeholder="Search classroom...">
+
+    <div class="row" id="classroomList">
+        <div class="col-md-3 classroom-box" th:each="c : ${classroom}" th:text="${c.name}" th:data-id="${c.id}" onclick="selectClassroom(this)"></div>
+    </div>
+
+    <div class="card mt-4" id="subjectForm" style="display:none;">
+        <div class="card-body">
+            <form action="/admin/subject" method="post">
+                <input type="hidden" name="classroom" id="selectedClassId">
+                <div class="mb-3">
+                    <label for="subjname" class="form-label">Subject Name</label>
+                    <input type="text" class="form-control" name="subjname" required>
+                </div>
+				
+				
+				
+				
+                <div class="mb-3">
+                    <label for="teacher" class="form-label">Select Teacher</label>
+                    <select class="form-select" name="teacher" required>
+                        <option th:each="t : ${teachers}" th:value="${t.id}" th:text="${t.name}"></option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-danger">Save Subject</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    const searchBar = document.getElementById('searchBar');
+    const classroomList = document.getElementById('classroomList');
+    const subjectForm = document.getElementById('subjectForm');
+    const selectedClassId = document.getElementById('selectedClassId');
+
+    searchBar.addEventListener('input', () => {
+        const value = searchBar.value.toLowerCase();
+        const classrooms = classroomList.querySelectorAll('.classroom-box');
+        classrooms.forEach(box => {
+            const text = box.innerText.toLowerCase();
+            box.style.display = text.includes(value) ? 'block' : 'none';
+        });
+    });
+
+    function selectClassroom(elem) {
+        const boxes = document.querySelectorAll('.classroom-box');
+        boxes.forEach(b => b.classList.remove('selected'));
+        elem.classList.add('selected');
+        document.getElementById('subjectForm').style.display = 'block';
+        selectedClassId.value = elem.getAttribute('data-id');
+    }
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
